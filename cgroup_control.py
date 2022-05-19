@@ -34,7 +34,7 @@ import argparse
 import psutil
 import os
 import subprocess
-from get_cpus import get_cpus
+import get_cpus
 
 cgroupfs = "/sys/fs/cgroup/"
 
@@ -247,7 +247,7 @@ def clean_cgroup_heir(cgroup_ver, controllers, cgroup_name, nolibcgroup):
                         clean_v2_heir(controllers, cgroup_name)
 
 def get_all_cpus():
-        return ','.join(map(str, psutil.Process().cpu_affinity()))
+        return psutil.Process().cpu_affinity()
 
 def parse_args():
         supported_controllers = ['cpu', 'cpuset']
@@ -281,12 +281,12 @@ def parse_args():
                 exit(1)
 
         if ("cpuset" in args.controllers and (not args.cpuset) and (not args.cores)):
-                args.cpuset = get_all_cpus()
+                args.cpuset = get_cpus.human_readable_cpuset(get_all_cpus())
 
         if (args.cores):
-                cpu_list = get_cpus(args.cores)
+                cpu_list = get_cpus.get_cpus(args.cores)
                 if (cpu_list != -1):
-                        args.cpuset = ','.join(map(str, cpu_list))
+                        args.cpuset = get_cpus.human_readable_cpuset(cpu_list)
 
         return args
 

@@ -56,6 +56,29 @@ def get_cpus(cores):
                         
         return export_list
 
+def human_readable_cpuset(cpu_list):
+        cpu_string = ""
+
+        prev = cpu_list[0]
+        cpu_string += str(prev)
+        dash_used = False
+
+        for i in range(1, len(cpu_list)):
+                # print(cpu_list[i], i)
+                if (cpu_list[i] == prev + 1):
+                        if (dash_used == False):
+                                cpu_string += "-"
+                                dash_used = True
+                        elif(dash_used == True and i == len(cpu_list) - 1):
+                                cpu_string += str(cpu_list[i])
+                else:
+                        cpu_string += str(prev) + "," + str(cpu_list[i])
+                        dash_used = False
+                prev = cpu_list[i]
+
+        return cpu_string
+
+
 def parse_args():
         parser = argparse.ArgumentParser()
         parser.add_argument("--cores", "-c", help="num of cpus needed, split between nodes default: 2",
@@ -67,5 +90,6 @@ if __name__=="__main__":
         args = parse_args()
         cpu_list = get_cpus(args.cores)
         if (cpu_list != -1):
-                cpu_string = ','.join(map(str, cpu_list))
-        print(cpu_string)
+                print("CPUset List: ", human_readable_cpuset(cpu_list))
+        else:
+                print("Unable to extract CPU list")
