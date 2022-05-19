@@ -46,14 +46,31 @@ def get_cpus(cores):
                 cpus_per_node.append(len(cpu_list[key]))
                 cpu_list[key].sort()
 
+        new_cores = cores
+        odd_cores = False
+
         nodes = len(cpu_list.keys())
-        cpus_per_node = int((cores * threads_per_core) / nodes)
+
+        if (cores % 2 != 0):
+                new_cores = cores - 1
+                odd_cores = True
+
+        num_cpus_per_node = int((new_cores * threads_per_core) / nodes)
+        if (cores < nodes):
+                num_cpus_per_node = threads_per_core
 
         export_list = []
         for key in cpu_list:
-                for cpus in range(cpus_per_node):
+                if (cores < nodes and cores <= list(cpu_list.keys()).index(key)):
+                        break
+                cpu_range = num_cpus_per_node
+                # Compensate for the missed one core
+                if odd_cores == True and key == list(cpu_list.keys())[0] and cores > nodes:
+                        cpu_range += threads_per_core
+                for cpus in range(int(cpu_range)):
                         export_list.append(cpu_list[key][cpus])
-                        
+
+        export_list.sort()
         return export_list
 
 def human_readable_cpuset(cpu_list):
