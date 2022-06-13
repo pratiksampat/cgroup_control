@@ -35,6 +35,8 @@ import psutil
 import os
 import subprocess
 import get_cpus
+import multiprocessing
+from time import sleep
 
 cgroupfs = "/sys/fs/cgroup/"
 
@@ -292,6 +294,23 @@ def parse_args():
 
         return args
 
+def dynamic_cpuset(cgroup_ver, args):
+        cur_cores = args.cores
+        while True:
+                cpu_list = get_cpus.get_cpus(cur_cores)
+                print(get_cpus.human_readable_cpuset(cpu_list))
+                args.cpuset = get_cpus.human_readable_cpuset(cpu_list)
+                populate_cgroup_limits(cgroup_ver, args)
+
+                sleep(180)
+                if (cur_cores == args.cores):
+                        cur_cores -= 5
+                elif (cur_cores == args.cores - 5):
+                        cur_cores += 2
+                elif (cur_cores == args.cores - 3):
+                        cur_cores += 3
+
+
 if __name__=="__main__":
 
         # Sanity root check
@@ -327,5 +346,10 @@ if __name__=="__main__":
         populate_cgroup_limits(cgroup_ver, args)
         print("Executing program under cgroup...", args.command)
         print("\n")
+
+        t1 = multiprocessing.Process(target=dynamic_cpuset, args=(cgroup_ver, args, ))
+        t1.start()
+
         execute_command(cgroup_ver, args.controllers, args.cgroup_name, args.command, args.nolibcgroup)
+        t1.terminate()
         clean_cgroup_heir(cgroup_ver, args.controllers, args.cgroup_name, args.nolibcgroup)
