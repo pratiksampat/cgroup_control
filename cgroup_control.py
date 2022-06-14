@@ -86,7 +86,7 @@ def create_cgroup_heir(cgroup_ver, controllers, cgroup_name, nolibcgroup):
                 else:
                         create_cgroupv2_heir(controllers, cgroup_name)
 
-def populate_v1_limits(args):
+def populate_v1_limits(args, nodes_str):
         try:
                 if ("cpuset" in args.controllers):
                         file = open(cgroupfs+"/cpuset/"+args.cgroup_name+"/cpuset.cpus", "w")
@@ -94,7 +94,7 @@ def populate_v1_limits(args):
                         file.close()
 
                         file = open(cgroupfs+"/cpuset/"+args.cgroup_name+"/cpuset.mems", "w")
-                        file.write("0")
+                        file.write(nodes_str)
                         file.close()
                 if ("cpu" in args.controllers):
                         file = open(cgroupfs+"/cpu/"+args.cgroup_name+"/cpu.cfs_period_us", "w")
@@ -108,7 +108,7 @@ def populate_v1_limits(args):
                 print("Limits cannot be set. Exiting...")
                 exit(1)
 
-def populate_v2_limits(args):
+def populate_v2_limits(args, nodes_str):
         try:
                 if ("cpuset" in args.controllers):
                         file = open(cgroupfs+args.cgroup_name+"/cpuset.cpus", "w")
@@ -130,13 +130,16 @@ def populate_v2_limits(args):
 
 
 def populate_cgroup_limits(cgroup_ver, args):
+        nodes_list = get_cpus.get_nodes()
+        nodes_str = ','.join(str(e) for e in nodes_list)
+        print("Nodes list ", nodes_str)
         try:
                 if (args.nolibcgroup == True):
-                        raise Exception("No libcgroup. Use traditional interface") 
+                        raise Exception("No libcgroup. Use traditional interface")
                 command = "cgset"
                 if ("cpuset" in args.controllers):
                         command += " -r cpuset.cpus=" + str(args.cpuset)
-                        command += " -r cpuset.mems=0"
+                        command += " -r cpuset.mems=" + nodes_str
                 if ("cpu" in args.controllers):
                         if (cgroup_ver == 1):
                                 command += " -r cpu.cfs_period_us=" + str(args.period)
@@ -150,17 +153,16 @@ def populate_cgroup_limits(cgroup_ver, args):
                                 limit += " " + str(args.period)
                                 limit += "'"
 
-                                command += " -r cpu.max=" + limit                             
-                        
+                                command += " -r cpu.max=" + limit
 
                 command += " " + args.cgroup_name
                 if os.system(command) != 0:
                          raise Exception("failed: ", command) 
         except:
                 if (cgroup_ver == 1):
-                        populate_v1_limits(args)
+                        populate_v1_limits(args, nodes_str)
                 else:
-                        populate_v2_limits(args)
+                        populate_v2_limits(args, nodes_str)
 
 # Write the current process's pid to the controller so that the child
 # is always spawned in it

@@ -5,6 +5,19 @@ import os
 SYS_PATH = "/sys/devices/system"
 NODE_PATH = SYS_PATH + "/node"
 
+def get_nodes():
+        node_list = []
+        directory = os.fsencode(NODE_PATH)
+        for file in os.listdir(directory):
+                f = os.fsdecode(file)
+                node_name = NODE_PATH + "/" + f
+                if f.startswith("node") and os.path.isdir(node_name):
+                        node = f.partition("node")
+                        # print(node)
+                        node_list.append(int(node[2]))
+        node_list.sort()
+        return node_list
+
 def get_cpus(cores):
         ## Read through the directory structure to see how many nodes exist and populate for CPUs
         cpu_list = {}
