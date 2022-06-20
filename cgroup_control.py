@@ -134,7 +134,6 @@ def populate_v2_limits(args, nodes_str):
 def populate_cgroup_limits(cgroup_ver, args):
         nodes_list = get_cpus.get_nodes()
         nodes_str = ','.join(str(e) for e in nodes_list)
-        print("Nodes list ", nodes_str)
         try:
                 if (args.nolibcgroup == True):
                         raise Exception("No libcgroup. Use traditional interface")
@@ -294,24 +293,32 @@ def parse_args():
 
         return args
 
-def dynamic_cpuset(cgroup_ver, args):
-        cur_cores = args.cores
+def dynamic_cpuset(cgroup_ver, args, cores_to_remove):
+
+        cpu_list = get_cpus.get_cpus(args.cores)
+        print(get_cpus.human_readable_cpuset(cpu_list))
+        args.cpuset = get_cpus.human_readable_cpuset(cpu_list)
+
+        threads_per_core = psutil.cpu_count() / psutil.cpu_count(logical=False)
+        cpus_to_remove = int(cores_to_remove * threads_per_core)
+        new_cpu_list = cpu_list
+
         while True:
-                cpu_list = get_cpus.get_cpus(cur_cores)
-                print(get_cpus.human_readable_cpuset(cpu_list))
-                args.cpuset = get_cpus.human_readable_cpuset(cpu_list)
                 populate_cgroup_limits(cgroup_ver, args)
 
                 sleep(180)
-                if (cur_cores == args.cores):
-                        cur_cores -= 5
-                elif (cur_cores == args.cores - 5):
-                        cur_cores += 2
-                elif (cur_cores == args.cores - 3):
-                        cur_cores += 3
+                if (len(new_cpu_list) == len(cpu_list)):
+                        new_cpu_list = cpu_list[:-cpus_to_remove]
+                elif (len(new_cpu_list) == len(cpu_list) - cpus_to_remove):
+                        new_cpu_list = cpu_list[:]
+
+                args.cpuset = get_cpus.human_readable_cpuset(new_cpu_list)
 
 
 if __name__=="__main__":
+
+        # Hardcoded for the test
+        cores_to_remove = 5
 
         # Sanity root check
         if (os.geteuid() != 0):
@@ -347,7 +354,7 @@ if __name__=="__main__":
         print("Executing program under cgroup...", args.command)
         print("\n")
 
-        t1 = multiprocessing.Process(target=dynamic_cpuset, args=(cgroup_ver, args, ))
+        t1 = multiprocessing.Process(target=dynamic_cpuset, args=(cgroup_ver, args, cores_to_remove))
         t1.start()
 
         execute_command(cgroup_ver, args.controllers, args.cgroup_name, args.command, args.nolibcgroup)
