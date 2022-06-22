@@ -286,9 +286,9 @@ def parse_args():
                 args.cpuset = get_cpus.human_readable_cpuset(get_all_cpus())
 
         if (args.cores):
-                cpu_list = get_cpus.get_cpus(args.cores)
-                if (cpu_list != -1):
-                        args.cpuset = get_cpus.human_readable_cpuset(cpu_list)
+                # cpu_list = get_cpus.get_cpus(args.cores)
+                # if (cpu_list != -1):
+                args.cpuset = get_cpus.human_readable_cpuset(get_all_cpus())
 
         return args
 
