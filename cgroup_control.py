@@ -284,20 +284,19 @@ def parse_args():
                 exit(1)
 
         if ("cpuset" in args.controllers and (not args.cpuset) and (not args.cores)):
-                args.cpuset = get_cpus.human_readable_cpuset(get_all_cpus())
+                args.cpuset = ','.join([str(elem) for elem in get_all_cpus()])
 
         if (args.cores):
                 cpu_list = get_cpus.get_cpus(args.cores)
                 if (cpu_list != -1):
-                        args.cpuset = get_cpus.human_readable_cpuset(cpu_list)
+                        args.cpuset = ','.join([str(elem) for elem in cpu_list])
 
         return args
 
 def dynamic_cpuset(cgroup_ver, args, cores_to_remove):
 
         cpu_list = get_cpus.get_cpus(args.cores)
-        print(get_cpus.human_readable_cpuset(cpu_list))
-        args.cpuset = get_cpus.human_readable_cpuset(cpu_list)
+        args.cpuset = ','.join([str(elem) for elem in cpu_list])
 
         threads_per_core = psutil.cpu_count() / psutil.cpu_count(logical=False)
         cpus_to_remove = int(cores_to_remove * threads_per_core)
@@ -312,7 +311,8 @@ def dynamic_cpuset(cgroup_ver, args, cores_to_remove):
                 elif (len(new_cpu_list) == len(cpu_list) - cpus_to_remove):
                         new_cpu_list = cpu_list[:]
 
-                args.cpuset = get_cpus.human_readable_cpuset(new_cpu_list)
+                args.cpuset = ','.join([str(elem) for elem in new_cpu_list])
+                print("CPUset dynamically changed to:", args.cpuset)
 
 
 if __name__=="__main__":
